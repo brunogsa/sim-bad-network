@@ -26,18 +26,27 @@ fi
 # Start
 if [ "$1" = "start" ]
 then
+
+	# Adding configs for outgoing packages
+	#tc qdisc add dev eth0 handle 1: root htb
+	#tc class add dev eth0 parent 1: classid 1:1 htb rate 1000Mbps
+	#tc class add dev eth0 parent 1:1 classid 1:11 htb rate 1000Mbps
+
+	#tc qdisc add dev eth0 parent 1:11 handle 10: netem delay "$2"ms "$3"ms loss random "$4"% corrupt "$5"%
+
 	# Set ifb0
 	modprobe ifb
 	ip link set dev ifb0 up
-	tc qdisc add dev eth0 ingress
-	tc filter add dev eth0 parent ffff: protocol ip u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev ifb0
+	tc qdisc add dev eth0 handle ffff: ingress
+	tc filter add dev eth0 parent ffff: protocol ip u32 match u32 0 0 action mirred egress redirect dev ifb0
 
-	# Adding configs for outgoing packages
-	tc qdisc add dev eth0 handle 1: root htb
-	tc class add dev eth0 parent 1: classid 1:1 htb rate 1000Mbps
-	tc class add dev eth0 parent 1:1 classid 1:11 htb rate 1000Mbps
+	# Adding configs for incoming packages
+	tc qdisc add dev ifb0 handle 1: root htb
+	tc class add dev ifb0 parent 1: classid 1:1 htb rate 1000Mbps
+	tc class add dev ifb0 parent 1:1 classid 1:10 htb rate 1000Mbps
 
-	tc qdisc add dev eth0 parent 1:11 handle 10: netem delay "$2"ms "$3"ms loss random "$4"% corrupt "$5"%
+	tc qdisc add dev ifb0 parent 1:10 handle 10: netem delay "$2"ms "$3"ms loss random "$4"% corrupt "$5"%
+
 	echo -e "\n Add some IPs now! \n"
 	exit 0;
 fi
@@ -45,7 +54,8 @@ fi
 # Filter
 if [ "$1" = "add" ]
 then
-	tc filter add dev eth0 protocol ip prio 1 u32 match ip dst "$2" flowid 1:11
+	#tc filter add dev eth0 protocol ip prio 1 u32 match ip dst "$2" flowid 1:10
+	tc filter add dev ifb0 protocol ip prio 1 u32 match ip dst "$2" flowid 1:10
 
 	echo -e "\n Your network is bad now for IP $2  :d \n"
 	exit 0;
