@@ -16,3 +16,4 @@
 	% ./sim-bad-net.sh add 192.168.17.106
 	% ./sim-bad-net.sh add 192.168.17.25
 	% ./sim-bad-net.sh stop
+
